@@ -1,0 +1,2167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panem: Coliseo Sónico 3D - Instrumento Kuramoto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script src="p5.min.js"></script>
+  <style>
+    :root {
+      --gold-primary: #f59e0b;
+      --gold-glow: rgba(245, 158, 11, 0.6);
+      --red-rebel: #ef4444;
+      --red-glow: rgba(239, 68, 68, 0.7);
+      --cyan-capitol: #38bdf8;
+      --cyan-glow: rgba(56, 189, 248, 0.6);
+      --bg-dark: #020617;
+      --panel-bg: rgba(10, 17, 34, 0.88);
+      --panel-border: rgba(245, 158, 11, 0.3);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      font-family: 'Montserrat', sans-serif;
+      color: #e2e8f0;
+    }
+
+    canvas:not(#compass-canvas) {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      outline: none;
+    }
+
+    /* PANTALLA DE BIENVENIDA / AUDIO OVERLAY */
+    #audio-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, rgba(15, 23, 42, 0.94) 0%, rgba(2, 6, 23, 0.98) 100%);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 24px;
+      backdrop-filter: blur(8px);
+      transition: opacity 0.6s ease, visibility 0.6s;
+    }
+
+    .modal-box {
+      max-width: 640px;
+      padding: 40px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--panel-border);
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(245, 158, 11, 0.15);
+      position: relative;
+    }
+
+    .modal-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 160px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--gold-primary), transparent);
+    }
+
+    .capitol-seal {
+      font-size: 0.85rem;
+      letter-spacing: 4px;
+      color: var(--gold-primary);
+      text-transform: uppercase;
+      font-family: 'Cinzel', serif;
+      margin-bottom: 8px;
+    }
+
+    #audio-overlay h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: #f8fafc;
+      letter-spacing: 4px;
+      margin-bottom: 12px;
+      text-shadow: 0 0 25px rgba(245, 158, 11, 0.5);
+    }
+
+    #audio-overlay h1 span {
+      color: var(--gold-primary);
+    }
+
+    #audio-overlay p {
+      line-height: 1.6;
+      color: #94a3b8;
+      font-size: 0.95rem;
+      margin-bottom: 1.8rem;
+    }
+
+    .theme-quote {
+      font-style: italic;
+      color: #cbd5e1;
+      font-size: 0.9rem;
+      border-left: 2px solid var(--gold-primary);
+      padding-left: 14px;
+      margin: 16px 0 24px 0;
+      text-align: left;
+    }
+
+    #start-btn {
+      padding: 16px 44px;
+      font-size: 1.1rem;
+      font-family: 'Cinzel', serif;
+      letter-spacing: 2px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #d97706, #b45309);
+      color: #fff;
+      border: 1px solid rgba(245, 158, 11, 0.7);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+      box-shadow: 0 0 30px rgba(217, 119, 6, 0.6);
+    }
+
+    #start-btn:hover {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      transform: scale(1.04);
+      box-shadow: 0 0 45px rgba(245, 158, 11, 0.85);
+    }
+
+    /* HUD DEL CAPITOLIO (PANEL DE CONTROL 3D) */
+    #ui-panel {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 18px 20px;
+      width: 350px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(245, 158, 11, 0.1);
+      transition: transform 0.3s ease;
+    }
+
+    #ui-panel::-webkit-scrollbar {
+      width: 4px;
+    }
+    #ui-panel::-webkit-scrollbar-thumb {
+      background: rgba(245, 158, 11, 0.4);
+      border-radius: 4px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.25);
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .panel-header h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.05rem;
+      color: var(--gold-primary);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* BRÚJULA DE FASE */
+    .kuramoto-compass-container {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(2, 6, 23, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+    }
+
+    #compass-canvas {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.95) 100%);
+      border: 1px solid var(--gold-primary);
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .compass-info {
+      flex: 1;
+    }
+
+    .order-label {
+      font-size: 0.7rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .order-value {
+      font-family: 'Cinzel', serif;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #f8fafc;
+    }
+
+    .state-indicator {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-top: 2px;
+      transition: color 0.3s;
+    }
+
+    .state-chaos { color: var(--red-rebel); text-shadow: 0 0 8px var(--red-glow); }
+    .state-partial { color: #fbbf24; text-shadow: 0 0 8px rgba(251, 191, 36, 0.5); }
+    .state-stable { color: #34d399; text-shadow: 0 0 8px rgba(52, 211, 153, 0.5); }
+    .state-hegemony { color: var(--gold-primary); text-shadow: 0 0 12px var(--gold-glow); }
+
+    /* CONTROLES / SLIDERS */
+    .control-group {
+      margin-bottom: 10px;
+    }
+
+    .control-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .control-group input[type="range"] {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+      accent-color: var(--gold-primary);
+      cursor: pointer;
+      outline: none;
+    }
+
+    /* BOTONES TÁCTICOS */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+    .tactical-btn {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #f1f5f9;
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.8px;
+      font-weight: 700;
+      padding: 8px 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .tactical-btn:hover {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: var(--gold-primary);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+    }
+
+    .tactical-btn.btn-whistle {
+      grid-column: span 2;
+      background: linear-gradient(90deg, rgba(239, 68, 68, 0.25), rgba(245, 158, 11, 0.25));
+      border-color: rgba(245, 158, 11, 0.6);
+      color: #fef08a;
+      font-size: 0.78rem;
+      padding: 10px 8px;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+    }
+
+    .tactical-btn.btn-whistle:hover {
+      background: linear-gradient(90deg, rgba(239, 68, 68, 0.4), rgba(245, 158, 11, 0.45));
+      border-color: var(--gold-primary);
+      box-shadow: 0 0 22px var(--gold-glow);
+    }
+
+    .tactical-btn.btn-active {
+      background: rgba(245, 158, 11, 0.3);
+      border-color: var(--gold-primary);
+      color: #fff;
+    }
+
+    /* INSTRUCCIONES RÁPIDAS */
+    .hint-box {
+      font-size: 0.7rem;
+      color: #94a3b8;
+      line-height: 1.45;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 8px 10px;
+      border-radius: 8px;
+      border-left: 3px solid var(--gold-primary);
+    }
+
+    .hint-box strong {
+      color: #e2e8f0;
+    }
+
+    /* TARJETA INFORMATIVA FLOTANTE (HOVER EN DISTRITO 3D) */
+    #district-card {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      z-index: 10;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      min-width: 260px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    #district-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .card-title {
+      font-family: 'Cinzel', serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--gold-primary);
+      margin-bottom: 2px;
+    }
+
+    .card-geometry {
+      font-size: 0.72rem;
+      color: #38bdf8;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .card-sub {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+
+    .card-stats {
+      font-size: 0.72rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      color: #cbd5e1;
+    }
+
+    /* CONTROLES DE CÁMARA 3D RÁPIDOS */
+    #camera-controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 10;
+      display: flex;
+      gap: 6px;
+    }
+
+    .cam-btn {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .cam-btn:hover {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: var(--gold-primary);
+      color: #fff;
+    }
+
+    #branding-watermark {
+      position: absolute;
+      bottom: 18px;
+      left: 24px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      color: rgba(245, 158, 11, 0.4);
+      z-index: 5;
+      pointer-events: none;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PANTALLA DE INICIO (OVERLAY DE AUDIO) -->
+  <div id="audio-overlay">
+    <div class="modal-box">
+      <div class="capitol-seal">El Capitolio presenta</div>
+      <h1>PANEM: <span>MATRIZ TERRITORIAL 3D</span></h1>
+      <p>Una experiencia <strong>tridimensional inmersiva</strong> basada en el <strong>Modelo de Sincronización de Kuramoto</strong>. Explora el mapa táctico de Panem, las 12 esculturas totémicas con sus placas de nombre, y la armonización vertical progresiva mediante el silbido del Sinsajo (sin órbitas ni círculos).</p>
+      
+      <div class="theme-quote">
+        «Con cada nota del silbido de Rue, la frecuencia dispersa de los Distritos despierta y converge hacia una sola voz en perfecta armonía vertical.»
+      </div>
+
+      <button id="start-btn">INGRESAR A LA MATRIZ 3D</button>
+    </div>
+  </div>
+
+  <!-- HUD DEL CAPITOLIO (PANEL DE CONTROL 3D) -->
+  <div id="ui-panel">
+    <div class="panel-header">
+      <h2><span>⚔️</span> Tablero Táctico de Panem</h2>
+      <span style="font-size: 0.75rem; color: #64748b; font-family: monospace;">MATRIZ-3D</span>
+    </div>
+
+    <!-- BRÚJULA DE FASE Y PARÁMETRO DE ORDEN -->
+    <div class="kuramoto-compass-container">
+      <canvas id="compass-canvas" width="58" height="58"></canvas>
+      <div class="compass-info">
+        <div class="order-label">Parámetro de Orden ($R$)</div>
+        <div id="val-r" class="order-value">0.00</div>
+        <div id="val-state" class="state-indicator state-chaos">DESORDEN / REBELIÓN</div>
+      </div>
+    </div>
+
+    <!-- CONTROLES PARAMÉTRICOS -->
+    <div class="control-group">
+      <label for="slider-k">
+        <span>Fuerza del Capitolio ($K$)</span>
+        <span id="val-k" style="color: var(--gold-primary); font-weight: bold;">1.8</span>
+      </label>
+      <input type="range" id="slider-k" min="0" max="6.0" step="0.1" value="1.8">
+    </div>
+
+    <div class="control-group">
+      <label for="slider-radius">
+        <span>Radio de Resonancia 3D</span>
+        <span id="val-radius" style="color: var(--gold-primary); font-weight: bold;">380 px</span>
+      </label>
+      <input type="range" id="slider-radius" min="150" max="700" step="10" value="380">
+    </div>
+
+    <div class="control-group">
+      <label for="slider-tempo">
+        <span>Velocidad del Reloj (Tempo)</span>
+        <span id="val-tempo" style="color: var(--gold-primary); font-weight: bold;">1.0x</span>
+      </label>
+      <input type="range" id="slider-tempo" min="0.3" max="2.5" step="0.1" value="1.0">
+    </div>
+
+    <div class="control-group">
+      <label for="slider-motion">
+        <span>Levitación y Resonancia Z</span>
+        <span id="val-motion" style="color: var(--gold-primary); font-weight: bold;">70%</span>
+      </label>
+      <input type="range" id="slider-motion" min="0" max="100" step="5" value="70">
+    </div>
+
+    <div class="control-group">
+      <label for="slider-reverb">
+        <span>Reverberación de la Arena</span>
+        <span id="val-reverb" style="color: var(--gold-primary); font-weight: bold;">45%</span>
+      </label>
+      <input type="range" id="slider-reverb" min="0" max="100" step="5" value="45">
+    </div>
+
+    <!-- BOTONES TÁCTICOS -->
+    <div class="action-grid">
+      <button id="btn-whistle" class="tactical-btn btn-whistle" title="Toca el silbido de 4 notas de Rue y armoniza gradualmente a los 12 distritos">
+        <span>🕊️</span> Silbido de Rue (Armonizar) [Espacio]
+      </button>
+
+      <button id="btn-layout" class="tactical-btn" title="Alterna la formación territorial de los distritos (sin órbitas)">
+        <span>🗺️</span> <span id="btn-layout-text">Matriz 4x3</span>
+      </button>
+
+      <button id="btn-pulse" class="tactical-btn" title="Fuerza un pulso de fase instantáneo">
+        <span>⚡</span> Pulso Capitolio
+      </button>
+
+      <button id="btn-scatter" class="tactical-btn" title="Perturba y dispersa las fases">
+        <span>💥</span> Caos Táctico
+      </button>
+
+      <button id="btn-rebel-all" class="tactical-btn" title="Activa la rebelión general de los distritos">
+        <span>🔥</span> Rebelión Total
+      </button>
+    </div>
+
+    <div class="hint-box">
+      🏷️ <strong>Rótulo 3D:</strong> Nombre del distrito debajo de cada figura.<br>
+      📊 <strong>Barra Vertical:</strong> Indicador lineal de fase (sin círculos ni órbitas).<br>
+      🖱️ <strong>Arrastrar Ratón:</strong> Rotar cámara 3D libremente.<br>
+      ⌨️ <strong>[Espacio]:</strong> Silbido de Rue (Ordena distritos) | <strong>[C]:</strong> Pulso.
+    </div>
+  </div>
+
+  <!-- CONTROLES RÁPIDOS DE CÁMARA 3D -->
+  <div id="camera-controls">
+    <button class="cam-btn" onclick="setCameraView('ISO')">Perspectiva</button>
+    <button class="cam-btn" onclick="setCameraView('TOP')">Cenital</button>
+    <button class="cam-btn" onclick="setCameraView('FRONT')">Frontal</button>
+  </div>
+
+  <!-- TARJETA INFORMATIVA FLOTANTE (HOVER EN DISTRITO 3D) -->
+  <div id="district-card">
+    <div id="card-title" class="card-title">Distrito 12</div>
+    <div id="card-geometry" class="card-geometry">Geoda de Carbón y Lava</div>
+    <div id="card-sub" class="card-sub">Minería | Tono: 146.8 Hz</div>
+    <div class="card-stats">
+      <span>Frecuencia: <strong id="card-freq">0.03 rad/s</strong></span>
+      <span>Fase (&theta;): <strong id="card-phase">0.0 rad</strong></span>
+      <span>Estado: <strong id="card-status">Conectado</strong></span>
+      <span>Sector: <strong id="card-affinity">Sector Minero</strong></span>
+    </div>
+  </div>
+
+  <div id="branding-watermark">Panem • Matriz Territorial 3D • Kuramoto</div>
+
+  <!-- ======================================================================= -->
+  <!-- MOTOR DE AUDIO, KURAMOTO Y RENDERIZADO WEBGL 3D                         -->
+  <!-- ======================================================================= -->
+  <script>
+    // =========================================================================
+    // 1. MOTOR DE AUDIO CINEMATOGRÁFICO NATIVO
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+    let masterFilter = null;
+    let reverbNode = null;
+    let reverbGain = null;
+    let dryGain = null;
+    let analyserNode = null;
+    let waveData = null;
+    let freqData = null;
+    let drones = [];
+
+    // Frecuencias afinadas en la escala modal épica de Panem (Sol Menor / Dórico)
+    const DISTRICT_FREQS = [
+      587.33, // D1: Lujo - D5 (Octaedro Brillante)
+      466.16, // D2: Armas - Bb4 (Fortaleza Balística)
+      523.25, // D3: Tecnología - C5 (Hipercubo Giróscopo)
+      349.23, // D4: Pesca - F4 (Prisma Acuático)
+      392.00, // D5: Energía - G4 (Bicono de Plasma)
+      311.13, // D6: Transporte - Eb4 (Turbina Hexagonal)
+      293.66, // D7: Madera - D4 (Monolito Biselado)
+      261.63, // D8: Textil - C4 (Huso Bicónico)
+      233.08, // D9: Cereales - Bb3 (Espiga Piramidal)
+      220.00, // D10: Ganado - A3 (Cráneo Ceremonial)
+      196.00, // D11: Agricultura - G3 (Cápsula Geodésica)
+      146.83  // D12: Minería - D3 (Geoda de Carbón/Lava)
+    ];
+
+    const RUE_WHISTLE_NOTES = [392.00, 466.16, 440.00, 293.66];
+
+    function createProceduralReverb(ctx, duration = 2.4, decay = 2.6) {
+      let sampleRate = ctx.sampleRate;
+      let length = sampleRate * duration;
+      let impulse = ctx.createBuffer(2, length, sampleRate);
+      let left = impulse.getChannelData(0);
+      let right = impulse.getChannelData(1);
+
+      for (let i = 0; i < length; i++) {
+        let n = (length - i) / length;
+        let env = Math.pow(n, decay);
+        left[i] = (Math.random() * 2 - 1) * env;
+        right[i] = (Math.random() * 2 - 1) * env;
+      }
+      return impulse;
+    }
+
+    function initAudioEngine() {
+      if (audioCtx) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return;
+      }
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      masterGain = audioCtx.createGain();
+      masterGain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+
+      analyserNode = audioCtx.createAnalyser();
+      analyserNode.fftSize = 256;
+      analyserNode.smoothingTimeConstant = 0.8;
+      waveData = new Uint8Array(analyserNode.fftSize);
+      freqData = new Uint8Array(analyserNode.frequencyBinCount);
+
+      masterFilter = audioCtx.createBiquadFilter();
+      masterFilter.type = 'lowpass';
+      masterFilter.frequency.setValueAtTime(350, audioCtx.currentTime);
+      masterFilter.Q.setValueAtTime(1.5, audioCtx.currentTime);
+
+      reverbNode = audioCtx.createConvolver();
+      reverbNode.buffer = createProceduralReverb(audioCtx);
+
+      reverbGain = audioCtx.createGain();
+      reverbGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+
+      dryGain = audioCtx.createGain();
+      dryGain.gain.setValueAtTime(0.75, audioCtx.currentTime);
+
+      masterFilter.connect(dryGain);
+      masterFilter.connect(reverbNode);
+      reverbNode.connect(reverbGain);
+
+      dryGain.connect(masterGain);
+      reverbGain.connect(masterGain);
+
+      masterGain.connect(analyserNode);
+      analyserNode.connect(audioCtx.destination);
+
+      drones = [];
+      for (let i = 0; i < 12; i++) {
+        let osc = audioCtx.createOscillator();
+        let oscSub = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+
+        if (i < 3) {
+          osc.type = 'triangle';
+          oscSub.type = 'sine';
+        } else if (i < 6) {
+          osc.type = 'sawtooth';
+          oscSub.type = 'triangle';
+        } else if (i < 9) {
+          osc.type = 'sine';
+          oscSub.type = 'triangle';
+        } else {
+          osc.type = 'triangle';
+          oscSub.type = 'sawtooth';
+        }
+
+        let baseF = DISTRICT_FREQS[i];
+        osc.frequency.setValueAtTime(baseF, audioCtx.currentTime);
+        oscSub.frequency.setValueAtTime(baseF * 0.5, audioCtx.currentTime);
+
+        gain.gain.setValueAtTime(0.005, audioCtx.currentTime);
+
+        osc.connect(gain);
+        oscSub.connect(gain);
+        gain.connect(masterFilter);
+
+        osc.start();
+        oscSub.start();
+
+        drones.push({ osc, oscSub, gain, baseFreq: baseF });
+      }
+    }
+
+    function updateAudioSystem(R_coherence, districtsList) {
+      if (!audioCtx) return;
+
+      let targetCutoff = map(R_coherence, 0, 1, 300, 4200);
+      masterFilter.frequency.setTargetAtTime(targetCutoff, audioCtx.currentTime, 0.08);
+
+      for (let i = 0; i < districtsList.length; i++) {
+        let d = districtsList[i];
+        let drone = drones[i];
+        if (!drone) continue;
+
+        if (d.isIsolated) {
+          drone.gain.gain.setTargetAtTime(0.002, audioCtx.currentTime, 0.08);
+        } else {
+          let phaseVolume = map(Math.sin(d.theta), -1, 1, 0.004, 0.06);
+          phaseVolume *= (0.5 + R_coherence * 0.8);
+          drone.gain.gain.setTargetAtTime(phaseVolume, audioCtx.currentTime, 0.04);
+        }
+      }
+    }
+
+    function playDistrictTrigger(index, isIsolated, velocity = 1.0) {
+      if (!audioCtx) return;
+      let now = audioCtx.currentTime;
+      let baseF = DISTRICT_FREQS[index];
+
+      let osc = audioCtx.createOscillator();
+      let oscHarmonic = audioCtx.createOscillator();
+      let noteGain = audioCtx.createGain();
+
+      if (isIsolated) {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(baseF * 0.85, now);
+        osc.frequency.exponentialRampToValueAtTime(45, now + 0.35);
+
+        oscHarmonic.type = 'square';
+        oscHarmonic.frequency.setValueAtTime(baseF * 1.42, now);
+        oscHarmonic.frequency.exponentialRampToValueAtTime(30, now + 0.35);
+
+        noteGain.gain.setValueAtTime(0.25 * velocity, now);
+        noteGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
+      } else {
+        if (index < 3) {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(baseF, now);
+          oscHarmonic.type = 'sine';
+          oscHarmonic.frequency.setValueAtTime(baseF * 2.0, now);
+        } else if (index < 6) {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(baseF, now);
+          oscHarmonic.type = 'sine';
+          oscHarmonic.frequency.setValueAtTime(baseF * 1.5, now);
+        } else if (index < 9) {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(baseF, now);
+          oscHarmonic.type = 'triangle';
+          oscHarmonic.frequency.setValueAtTime(baseF * 0.5, now);
+        } else {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(baseF, now);
+          oscHarmonic.type = 'sine';
+          oscHarmonic.frequency.setValueAtTime(baseF * 0.5, now);
+        }
+
+        noteGain.gain.setValueAtTime(0.24 * velocity, now);
+        let decayTime = index < 3 ? 0.7 : (index >= 9 ? 0.85 : 0.55);
+        noteGain.gain.exponentialRampToValueAtTime(0.0001, now + decayTime);
+      }
+
+      osc.connect(noteGain);
+      oscHarmonic.connect(noteGain);
+      noteGain.connect(masterFilter);
+
+      osc.start(now);
+      oscHarmonic.start(now);
+      osc.stop(now + 0.85);
+      oscHarmonic.stop(now + 0.85);
+    }
+
+    // SILBIDO DEL SINSAJO (RUE) QUE ARMONIZA GRADUALMENTE A LOS DISTRITOS
+    let isWhistlingHarmonization = false;
+    let whistleTimer = 0;
+    let whistleTargetPhase = 0;
+
+    function playRueWhistle() {
+      if (!audioCtx) return;
+      let now = audioCtx.currentTime;
+      let noteDuration = 0.42;
+      let gap = 0.06;
+
+      for (let i = 0; i < RUE_WHISTLE_NOTES.length; i++) {
+        let noteStart = now + i * (noteDuration + gap);
+        let freq = RUE_WHISTLE_NOTES[i];
+
+        let osc = audioCtx.createOscillator();
+        let lfo = audioCtx.createOscillator();
+        let lfoGain = audioCtx.createGain();
+        let g = audioCtx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, noteStart);
+
+        lfo.frequency.setValueAtTime(5.5, noteStart);
+        lfoGain.gain.setValueAtTime(4.0, noteStart);
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+
+        g.gain.setValueAtTime(0.001, noteStart);
+        g.gain.linearRampToValueAtTime(0.22, noteStart + 0.08);
+        g.gain.setValueAtTime(0.20, noteStart + noteDuration - 0.08);
+        g.gain.exponentialRampToValueAtTime(0.001, noteStart + noteDuration);
+
+        osc.connect(g);
+        g.connect(reverbNode);
+        g.connect(masterGain);
+
+        lfo.start(noteStart);
+        osc.start(noteStart);
+        lfo.stop(noteStart + noteDuration + 0.05);
+        osc.stop(noteStart + noteDuration + 0.05);
+      }
+
+      // Activar proceso de armonización gradual de Kuramoto
+      isWhistlingHarmonization = true;
+      whistleTimer = 550; // ~9 segundos de ordenamiento gradual
+      whistleTargetPhase = Math.random() * TWO_PI;
+
+      // Ondas expansivas 3D doradas (Prismas volumétricos angulares, sin círculos)
+      sonicRipples3D.push(new SonicPrism3D(0, 0, 0, 480, [245, 158, 11], 5));
+      spawnFireBurst3D(0, 0, 0, 50);
+    }
+
+    // =========================================================================
+    // 2. MODELO DE KURAMOTO Y 12 GEOMETRÍAS 3D ÚNICAS (SIN ÓRBITAS)
+    // =========================================================================
+    let districts = [];
+    let particles3D = [];
+    let fireParticles3D = [];
+    let sonicRipples3D = [];
+
+    let K_coupling = 1.8;
+    let listeningRadius = 380;
+    let clockTempo = 1.0;
+    let motionFactor = 0.70;
+    let currentLayout = 'TACTICAL_GRID'; // 'TACTICAL_GRID', 'AVENUE_TRIBUTES', 'STEPPED_PYRAMID'
+
+    let hoveredDistrict = null;
+
+    // INFORMACIÓN DE LOS 12 DISTRITOS CON SU MODELO 3D EXCLUSIVO Y POSICIÓN EN LA MATRIZ
+    const DISTRICT_DATA = [
+      { num: 1, name: "Lujo", geomName: "Diamante Tallado Brillante", color: [250, 204, 21], sector: "Sector Capitolio", zElev: 48, gridRow: 1, gridCol: 0 },
+      { num: 2, name: "Armas", geomName: "Espadas Militares Cruzadas", color: [225, 29, 72], sector: "Sector El Hueso", zElev: 36, gridRow: 1, gridCol: 1 },
+      { num: 3, name: "Tecnología", geomName: "Microchip Procesador CPU", color: [56, 189, 248], sector: "Sector Núcleo", zElev: 38, gridRow: 1, gridCol: 2 },
+      { num: 4, name: "Pesca", geomName: "Tridente Marino de 3 Puntas", color: [14, 165, 233], sector: "Costa Noroeste", zElev: -18, gridRow: 0, gridCol: 0 },
+      { num: 5, name: "Energía", geomName: "Rayo Eléctrico Táctico", color: [234, 179, 8], sector: "Presa Central", zElev: 22, gridRow: 1, gridCol: 3 },
+      { num: 6, name: "Transporte", geomName: "Locomotora de Tren Bala", color: [168, 85, 247], sector: "Terminal Ferroviaria", zElev: -12, gridRow: 2, gridCol: 0 },
+      { num: 7, name: "Madera", geomName: "Hachas de Leñador Cruzadas", color: [180, 83, 9], sector: "Bosques del Norte", zElev: 16, gridRow: 0, gridCol: 1 },
+      { num: 8, name: "Textil", geomName: "Tijeras de Sastre de Textil", color: [236, 72, 153], sector: "Complejo Fabril", zElev: -20, gridRow: 2, gridCol: 1 },
+      { num: 9, name: "Cereales", geomName: "Espigas de Trigo y Hoz", color: [245, 158, 11], sector: "Llanuras del Norte", zElev: -6, gridRow: 0, gridCol: 3 },
+      { num: 10, name: "Ganado", geomName: "Cráneo de Toro Longhorn", color: [217, 119, 6], sector: "Meseta Ganadera", zElev: 0, gridRow: 2, gridCol: 2 },
+      { num: 11, name: "Agricultura", geomName: "Planta de Cosecha y Fruto", color: [34, 197, 94], sector: "Valles del Sur", zElev: -10, gridRow: 0, gridCol: 2 },
+      { num: 12, name: "Minería", geomName: "Picos de Minero Cruzados", color: [148, 163, 184], sector: "Veta Subterránea", zElev: -54, gridRow: 2, gridCol: 3 }
+    ];
+
+    // CÁLCULO DE POSICIONES TERRITORIALES NO-ORBITALES
+    function getDistrictAnchor(data, layout) {
+      if (layout === 'AVENUE_TRIBUTES') {
+        // Formación Avenida: Dos columnas de 6 bastiones monolíticos enfrentados
+        let isLeft = (data.num <= 6);
+        let x = isLeft ? -190 : 190;
+        let rowIdx = isLeft ? (data.num - 1) : (data.num - 7);
+        let y = -240 + rowIdx * 96;
+        let z = data.zElev * 0.6;
+        return { x, y, z };
+      } else if (layout === 'STEPPED_PYRAMID') {
+        // Formación Ciudadela Escalonada: 3 terrazas rectangulares sin círculos
+        if (data.num === 1) return { x: -110, y: -80, z: 50 };
+        if (data.num === 2) return { x: 110, y: -80, z: 50 };
+        if (data.num === 3) return { x: -110, y: 80, z: 50 };
+        if (data.num === 5) return { x: 110, y: 80, z: 50 };
+
+        if (data.num === 4) return { x: -230, y: -170, z: 5 };
+        if (data.num === 6) return { x: 230, y: -170, z: 5 };
+        if (data.num === 7) return { x: -230, y: 170, z: 5 };
+        if (data.num === 8) return { x: 230, y: 170, z: 5 };
+
+        if (data.num === 9) return { x: -330, y: -250, z: -45 };
+        if (data.num === 10) return { x: 330, y: -250, z: -45 };
+        if (data.num === 11) return { x: -330, y: 250, z: -45 };
+        if (data.num === 12) return { x: 330, y: 250, z: -45 };
+        return { x: 0, y: 0, z: 0 };
+      } else {
+        // TACTICAL_GRID (Matriz Territorial 4x3 de Panem - Predeterminada)
+        let spacingX = 180;
+        let spacingY = 155;
+        let x = (data.gridCol - 1.5) * spacingX;
+        let y = (data.gridRow - 1.0) * spacingY;
+        let z = data.zElev;
+        return { x, y, z };
+      }
+    }
+
+    // GENERADOR DE RÓTULO HOLOGRÁFICO CON EL NOMBRE DEL DISTRITO
+    function createDistrictBadgeTexture(data) {
+      let pg = createGraphics(256, 80);
+      pg.pixelDensity(2);
+      // Fondo oscuro táctico de obsidiana
+      pg.background(8, 14, 26, 240);
+
+      // Borde rectangular angular
+      pg.noFill();
+      pg.stroke(data.color[0], data.color[1], data.color[2], 230);
+      pg.strokeWeight(2.5);
+      pg.rect(2, 2, 252, 76, 4);
+
+      // Esquinas biseladas tácticas
+      pg.stroke(data.color[0], data.color[1], data.color[2], 255);
+      pg.strokeWeight(3);
+      pg.line(2, 14, 14, 2);
+      pg.line(242, 2, 254, 14);
+      pg.line(2, 66, 14, 78);
+      pg.line(242, 78, 254, 66);
+
+      // Encabezado: DISTRITO X
+      pg.fill(data.color[0], data.color[1], data.color[2]);
+      pg.noStroke();
+      pg.textAlign(CENTER, CENTER);
+      pg.textSize(17);
+      pg.textStyle(BOLD);
+      pg.text(`DISTRITO ${data.num}`, 128, 26);
+
+      // Subtítulo: NOMBRE OFICIAL
+      pg.fill(241, 245, 249);
+      pg.textSize(15);
+      pg.textStyle(NORMAL);
+      pg.text(data.name.toUpperCase(), 128, 52);
+
+      return pg;
+    }
+
+    // ONDA EXPANSIVA PRISMÁTICA 3D (CERO CÍRCULOS, CERO TOROIDES)
+    class SonicPrism3D {
+      constructor(x, y, z, maxRadius, color = [245, 158, 11], speed = 4.5) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.size = 12;
+        this.maxSize = maxRadius;
+        this.color = color;
+        this.speed = speed;
+        this.alpha = 255;
+      }
+
+      update() {
+        this.size += this.speed;
+        this.alpha = map(this.size, 12, this.maxSize, 255, 0);
+        return this.size < this.maxSize;
+      }
+
+      draw() {
+        push();
+        translate(this.x, this.y, this.z);
+        noFill();
+        stroke(this.color[0], this.color[1], this.color[2], this.alpha);
+        strokeWeight(map(this.alpha, 255, 0, 2.2, 0.6));
+        // Onda de choque volumétrica prismática/diamantada (sin círculos)
+        rotateZ(PI / 4);
+        box(this.size, this.size, this.size * 0.5);
+        pop();
+      }
+    }
+
+    // PARTÍCULAS DE BRASAS / ASCUAS 3D
+    class FireParticle3D {
+      constructor(x, y, z, isExplosion = false) {
+        this.x = x + random(-8, 8);
+        this.y = y + random(-8, 8);
+        this.z = z + random(-8, 8);
+        let speed = isExplosion ? random(2, 6) : random(0.6, 2.2);
+        let angle = random(TWO_PI);
+        this.vx = cos(angle) * speed;
+        this.vy = sin(angle) * speed;
+        this.vz = random(1.5, 4.0); // Flotan hacia arriba en Z
+        this.life = 255;
+        this.decay = random(3, 6);
+        this.size = random(2.5, 5.5);
+        this.color = random() > 0.4 ? [245, 158, 11] : [239, 68, 68];
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.z += this.vz;
+        this.life -= this.decay;
+        this.size *= 0.98;
+        return this.life > 0;
+      }
+
+      draw() {
+        push();
+        translate(this.x, this.y, this.z);
+        noStroke();
+        emissiveMaterial(this.color[0], this.color[1], this.color[2]);
+        sphere(this.size, 5, 4);
+        pop();
+      }
+    }
+
+    function spawnFireBurst3D(x, y, z, count = 25) {
+      for (let i = 0; i < count; i++) {
+        fireParticles3D.push(new FireParticle3D(x, y, z, true));
+      }
+    }
+
+    // CENIZA ATMOSFÉRICA 3D
+    class AmbientAsh3D {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = random(-600, 600);
+        this.y = random(-600, 600);
+        this.z = random(-200, 300);
+        this.vx = random(-0.25, 0.25);
+        this.vy = random(-0.25, 0.25);
+        this.vz = random(0.2, 0.8);
+        this.alpha = random(30, 90);
+        this.size = random(1.5, 3.2);
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.z += this.vz;
+        if (this.z > 350 || Math.abs(this.x) > 650 || Math.abs(this.y) > 650) {
+          this.reset();
+          this.z = -200;
+        }
+      }
+
+      draw() {
+        push();
+        translate(this.x, this.y, this.z);
+        noStroke();
+        emissiveMaterial(245, 158, 11);
+        sphere(this.size, 4, 3);
+        pop();
+      }
+    }
+
+    // CLASE DE DISTRITO EN EL COLISEO 3D
+    class DistrictNode3D {
+      constructor(data, startX, startY, startZ) {
+        this.num = data.num;
+        this.name = data.name;
+        this.geomName = data.geomName;
+        this.color = data.color;
+        this.sector = data.sector;
+        this.zElev = data.zElev;
+        this.gridRow = data.gridRow;
+        this.gridCol = data.gridCol;
+
+        // Rótulo 2D/3D con el nombre del distrito bajo la figura
+        this.badgeGfx = createDistrictBadgeTexture(data);
+
+        this.x = startX;
+        this.y = startY;
+        this.z = startZ;
+        this.targetX = startX;
+        this.targetY = startY;
+        this.targetZ = startZ;
+
+        // Fase de Kuramoto y frecuencia natural
+        this.theta = Math.random() * TWO_PI;
+        this.baseOmega = 0.024 + Math.random() * 0.014;
+        this.omega = this.baseOmega;
+
+        // Estado de Rebelión
+        this.isIsolated = false;
+        this.isolationTimer = 0;
+
+        // Dinámica visual 3D
+        this.pulse = 0;
+        this.scaleImpulse = 1.0;
+        this.rotationY = Math.random() * TWO_PI;
+        this.rotationX = 0;
+      }
+
+      toggleRebellion() {
+        this.isIsolated = !this.isIsolated;
+        if (this.isIsolated) {
+          this.isolationTimer = 400;
+          this.omega = this.baseOmega * 1.8;
+          playDistrictTrigger(this.num - 1, true, 1.3);
+          spawnFireBurst3D(this.x, this.y, this.z, 30);
+          sonicRipples3D.push(new SonicPrism3D(this.x, this.y, this.z, 280, [239, 68, 68], 5));
+        } else {
+          this.omega = this.baseOmega;
+        }
+      }
+
+      update(all, R_current) {
+        // Rotación continua individual de la figura 3D (sobre su propio eje)
+        this.rotationY += 0.015 + (this.isIsolated ? 0.04 : 0);
+        this.rotationX = Math.sin(frameCount * 0.02 + this.num) * 0.15;
+
+        // Posición Táctica Territorial (SIN ÓRBITAS NI SISTEMA SOLAR)
+        let anchor = getDistrictAnchor(this, currentLayout);
+        let baseAnchorX = anchor.x;
+        let baseAnchorY = anchor.y;
+        let baseAnchorZ = anchor.z;
+
+        // Levitación vertical Z guiada por la fase de Kuramoto (Pistón sónico en Z)
+        let verticalAmp = 22 * motionFactor;
+        let phaseDz = Math.sin(this.theta) * verticalAmp;
+
+        // Micro-deriva táctica no-orbital (vibración de resonancia en X/Y)
+        let driftX = (noise(this.num * 15 + frameCount * 0.006) - 0.5) * 12 * motionFactor;
+        let driftY = (noise(this.num * 30 + frameCount * 0.006) - 0.5) * 12 * motionFactor;
+
+        if (this.isIsolated) {
+          driftX += random(-6, 6);
+          driftY += random(-6, 6);
+          phaseDz += random(-8, 8);
+        }
+
+        this.targetX = baseAnchorX + driftX;
+        this.targetY = baseAnchorY + driftY;
+        this.targetZ = baseAnchorZ + phaseDz;
+
+        this.x = lerp(this.x, this.targetX, 0.06);
+        this.y = lerp(this.y, this.targetY, 0.06);
+        this.z = lerp(this.z, this.targetZ, 0.06);
+
+        // Aislamiento
+        if (this.isIsolated) {
+          this.isolationTimer--;
+          if (this.isolationTimer <= 0) {
+            this.isIsolated = false;
+            this.omega = this.baseOmega;
+          }
+        }
+
+        // =====================================================================
+        // EFECTO DEL SILBIDO DE RUE: ARMONIZACIÓN GRADUAL DE KURAMOTO
+        // =====================================================================
+        if (isWhistlingHarmonization && !this.isIsolated) {
+          let phaseDiff = whistleTargetPhase - this.theta;
+          this.theta += Math.sin(phaseDiff) * 0.028 * clockTempo;
+          this.omega = lerp(this.omega, 0.028, 0.005);
+        }
+
+        // Dinámica estándar de Kuramoto
+        let couplingSum = 0;
+        let count = 0;
+
+        if (!this.isIsolated) {
+          for (let other of all) {
+            if (other.num === this.num || other.isIsolated) continue;
+            let d = dist(this.x, this.y, this.z, other.x, other.y, other.z);
+            if (d < listeningRadius && d > 0) {
+              let weight = 1.0 - (d / listeningRadius);
+              couplingSum += weight * Math.sin(other.theta - this.theta);
+              count++;
+            }
+          }
+        }
+
+        let dTheta = this.omega * clockTempo;
+        if (count > 0 && !this.isIsolated) {
+          dTheta += (K_coupling / count) * couplingSum * 0.016 * clockTempo;
+        }
+
+        let prevTheta = this.theta;
+        this.theta += dTheta;
+
+        // Disparo de pulso sonoro al completar ciclo (2*PI)
+        if (Math.floor(prevTheta / TWO_PI) < Math.floor(this.theta / TWO_PI)) {
+          this.pulse = 1.0;
+          this.scaleImpulse = 1.35;
+          playDistrictTrigger(this.num - 1, this.isIsolated);
+
+          // Onda de choque prismática angular (sin círculos)
+          sonicRipples3D.push(new SonicPrism3D(this.x, this.y, this.z, listeningRadius * 0.75, this.isIsolated ? [239, 68, 68] : this.color, 4.2));
+          if (this.isIsolated || random() > 0.6) {
+            spawnFireBurst3D(this.x, this.y, this.z, this.isIsolated ? 12 : 5);
+          }
+        }
+
+        this.theta = this.theta % TWO_PI;
+
+        if (this.pulse > 0) this.pulse -= 0.035;
+        this.scaleImpulse = lerp(this.scaleImpulse, 1.0, 0.08);
+      }
+
+      // RENDERIZADO DE CADA GEOMETRÍA 3D EXCLUSIVA (¡NO CÍRCULOS!)
+      draw() {
+        push();
+        translate(this.x, this.y, this.z);
+        scale(this.scaleImpulse);
+
+        // Orientación y rotación tridimensional
+        rotateX(this.rotationX);
+        rotateY(this.rotationY);
+
+        let isHovered = (hoveredDistrict === this);
+        let c = this.isIsolated ? [239, 68, 68] : this.color;
+
+        // Luz puntual de pulso
+        if (this.pulse > 0.1) {
+          pointLight(c[0], c[1], c[2], 0, 0, 10);
+        }
+
+        // Material y reflectancia 3D
+        ambientMaterial(c[0] * 0.4, c[1] * 0.4, c[2] * 0.4);
+        specularMaterial(c[0], c[1], c[2]);
+        shininess(isHovered ? 40 : 20);
+
+        if (this.pulse > 0.1 || isHovered) {
+          emissiveMaterial(c[0] * 0.6, c[1] * 0.6, c[2] * 0.6);
+        } else {
+          emissiveMaterial(c[0] * 0.15, c[1] * 0.15, c[2] * 0.15);
+        }
+
+        stroke(c[0], c[1], c[2], 180);
+        strokeWeight(isHovered ? 2.0 : 1.2);
+
+        // =====================================================================
+        // LAS 12 GEOMETRÍAS 3D ÚNICAS
+        // =====================================================================
+        switch (this.num) {
+          case 1: // D1: Diamante Tallado Brillante de Lujo (Brilliant Cut Diamond)
+            push();
+            rotateY(frameCount * 0.02);
+            // Corona facetada superior (mesa octagonal y facetas superiores)
+            push();
+            translate(0, 0, 8);
+            rotateX(PI);
+            cone(18, 12, 8);
+            pop();
+            // Faja / Cinturón central octagonal
+            cylinder(18, 3, 8);
+            // Pabellón inferior (cono afilado hacia la culata)
+            push();
+            translate(0, 0, -12);
+            cone(18, 22, 8);
+            pop();
+            // Reflejo central brillante
+            push();
+            translate(0, 0, 14);
+            emissiveMaterial(255, 255, 230);
+            box(6, 6, 2);
+            pop();
+            pop();
+            break;
+
+          case 2: // D2: Dos Espadas de Combate Militares Cruzadas (Crossed Battle Swords)
+            push();
+            // Espada 1 (inclinada -35 deg)
+            push();
+            rotateZ(-0.62);
+            box(4.5, 42, 2); // Hoja de acero
+            translate(0, -23, 0);
+            cone(4, 8, 4); // Punta afilada
+            translate(0, 32, 0);
+            box(16, 3.5, 4); // Guarda
+            translate(0, 8, 0);
+            cylinder(2.2, 10, 6); // Empuñadura
+            translate(0, 6, 0);
+            box(4.5, 4.5, 4.5); // Pomo
+            pop();
+
+            // Espada 2 (inclinada +35 deg)
+            push();
+            rotateZ(0.62);
+            box(4.5, 42, 2);
+            translate(0, -23, 0);
+            cone(4, 8, 4);
+            translate(0, 32, 0);
+            box(16, 3.5, 4);
+            translate(0, 8, 0);
+            cylinder(2.2, 10, 6);
+            translate(0, 6, 0);
+            box(4.5, 4.5, 4.5);
+            pop();
+            pop();
+            break;
+
+          case 3: // D3: Microchip Procesador CPU con Pines y Núcleo (CPU Microchip)
+            push();
+            // Placa / Sustrato cerámico cuadrado
+            fill(15, 23, 42);
+            box(34, 34, 4);
+            // Núcleo de silicio / IHS central dorado
+            translate(0, 0, 3);
+            emissiveMaterial(c[0], c[1], c[2]);
+            box(18, 18, 3);
+            // Matriz de 16 pines de conexión en los 4 bordes
+            fill(245, 158, 11);
+            noStroke();
+            for (let p = -12; p <= 12; p += 6) {
+              push(); translate(p, -20, 0); box(2, 6, 1.5); pop();
+              push(); translate(p, 20, 0); box(2, 6, 1.5); pop();
+              push(); translate(-20, p, 0); box(6, 2, 1.5); pop();
+              push(); translate(20, p, 0); box(6, 2, 1.5); pop();
+            }
+            // Luz de actividad de cómputo
+            translate(0, 0, 3);
+            emissiveMaterial(56, 189, 248);
+            box(6, 6, 2);
+            pop();
+            break;
+
+          case 4: // D4: Tridente Marino de 3 Puntas (Oceanic Trident)
+            push();
+            rotateZ(PI); // Hacia arriba
+            // Asta principal del tridente
+            translate(0, 8, 0);
+            cylinder(3, 44, 8);
+            // Base curva transversal
+            translate(0, -22, 0);
+            box(24, 4, 3.5);
+            // Punta central esbelta
+            push();
+            translate(0, -14, 0);
+            cone(4.5, 24, 4);
+            pop();
+            // Punta izquierda curvada hacia afuera
+            push();
+            translate(-9, -10, 0);
+            rotateZ(0.18);
+            cone(4, 20, 4);
+            pop();
+            // Punta derecha curvada hacia afuera
+            push();
+            translate(9, -10, 0);
+            rotateZ(-0.18);
+            cone(4, 20, 4);
+            pop();
+            pop();
+            break;
+
+          case 5: // D5: Rayo Eléctrico 3D en Zig-Zag (Electric Lightning Bolt)
+            push();
+            // Segmento superior diagonal
+            push();
+            translate(5, -16, 0);
+            rotateZ(-0.45);
+            box(7, 20, 6);
+            pop();
+            // Segmento medio con quiebre horizontal
+            push();
+            translate(0, -4, 0);
+            box(18, 6, 6);
+            pop();
+            // Segmento inferior diagonal
+            push();
+            translate(-4, 10, 0);
+            rotateZ(-0.45);
+            box(7, 24, 6);
+            // Punta afilada del rayo
+            translate(-2, 13, 0);
+            rotateZ(PI);
+            cone(5, 12, 4);
+            pop();
+            pop();
+            break;
+
+          case 6: // D6: Locomotora de Tren Bala Aerodinámica (Maglev Bullet Train)
+            push();
+            rotateX(0.2);
+            // Chasis principal del vagón
+            box(22, 40, 16);
+            // Nariz aerodinámica cuneiforme frontal
+            push();
+            translate(0, 22, -2);
+            rotateX(0.42);
+            box(20, 16, 12);
+            pop();
+            // Cabina de parabrisas tintado oscuro
+            push();
+            translate(0, 14, 5);
+            fill(10, 15, 25);
+            box(18, 12, 7);
+            pop();
+            // Faros frontales gemelos luminosos
+            push();
+            translate(-6, 28, -2);
+            emissiveMaterial(255, 255, 240);
+            noStroke();
+            sphere(2.5, 6, 6);
+            translate(12, 0, 0);
+            sphere(2.5, 6, 6);
+            pop();
+            // Rieles magnéticos inferiores
+            push();
+            translate(0, 0, -10);
+            fill(50, 50, 65);
+            box(26, 44, 3);
+            pop();
+            pop();
+            break;
+
+          case 7: // D7: Dos Hachas de Leñador Cruzadas sobre Tronco (Crossed Lumberjack Axes)
+            push();
+            // Tronco de madera base
+            push();
+            translate(0, 16, 0);
+            rotateX(HALF_PI);
+            fill(100, 55, 25);
+            cylinder(14, 16, 8);
+            pop();
+
+            // Hacha 1 (inclinada -36 deg)
+            push();
+            rotateZ(-0.62);
+            fill(180, 110, 45);
+            cylinder(2.8, 44, 8);
+            translate(0, -16, 0);
+            fill(160, 170, 185);
+            box(7, 12, 8);
+            translate(7, 0, 0);
+            cone(6, 12, 3);
+            pop();
+
+            // Hacha 2 (inclinada +36 deg)
+            push();
+            rotateZ(0.62);
+            fill(180, 110, 45);
+            cylinder(2.8, 44, 8);
+            translate(0, -16, 0);
+            fill(160, 170, 185);
+            box(7, 12, 8);
+            translate(-7, 0, 0);
+            rotateZ(PI);
+            cone(6, 12, 3);
+            pop();
+            pop();
+            break;
+
+          case 8: // D8: Tijeras de Sastre de Textil Abiertas (Tailor Shears)
+            push();
+            // Perno central dorado
+            push();
+            fill(245, 158, 11);
+            cylinder(4, 5, 8);
+            pop();
+
+            // Hoja cortante derecha con ojal
+            push();
+            rotateZ(0.35);
+            translate(0, -16, 0);
+            box(4, 30, 1.8);
+            translate(0, -16, 0);
+            cone(3, 8, 4);
+            translate(0, 40, 0);
+            noFill();
+            stroke(c[0], c[1], c[2], 240);
+            strokeWeight(2.5);
+            box(10, 14, 3);
+            pop();
+
+            // Hoja cortante izquierda con ojal
+            push();
+            rotateZ(-0.35);
+            translate(0, -16, 0);
+            box(4, 30, 1.8);
+            translate(0, -16, 0);
+            cone(3, 8, 4);
+            translate(0, 40, 0);
+            noFill();
+            stroke(c[0], c[1], c[2], 240);
+            strokeWeight(2.5);
+            box(10, 14, 3);
+            pop();
+
+            // Cinta de tela tejida
+            push();
+            translate(0, 6, 0);
+            fill(236, 72, 153);
+            noStroke();
+            box(24, 6, 1.5);
+            pop();
+            pop();
+            break;
+
+          case 9: // D9: Gavilla de Espigas de Trigo y Hoz de Cosecha (Wheat & Sickle)
+            push();
+            // 3 Espigas doradas de trigo
+            for (let a of [-0.22, 0, 0.22]) {
+              push();
+              rotateZ(a);
+              cylinder(1.8, 36, 6);
+              for (let k = -14; k <= 8; k += 4) {
+                push(); translate(2, k, 0); rotateZ(0.4); box(3, 5, 2.5); pop();
+                push(); translate(-2, k, 0); rotateZ(-0.4); box(3, 5, 2.5); pop();
+              }
+              pop();
+            }
+
+            // Hoz curva de siega envolviendo las espigas
+            push();
+            translate(8, 6, 2);
+            fill(150, 90, 35);
+            cylinder(2.5, 14, 6);
+            translate(-2, -9, 0);
+            fill(220, 225, 235);
+            rotateZ(-0.7);
+            box(3.5, 18, 1.8);
+            translate(-5, -8, 0);
+            rotateZ(-0.8);
+            box(3.5, 14, 1.8);
+            pop();
+            pop();
+            break;
+
+          case 10: // D10: Cráneo de Toro / Res Longhorn con Astas (Bull Skull)
+            push();
+            box(16, 26, 12);
+            translate(0, 14, -2);
+            box(10, 14, 8);
+            translate(0, -14, 2);
+
+            // Cuencas oculares
+            push();
+            translate(-6, -2, 4);
+            fill(10, 15, 25);
+            box(4, 4, 2);
+            translate(12, 0, 0);
+            box(4, 4, 2);
+            pop();
+
+            // Gran Cornamenta Longhorn (Izquierda)
+            push();
+            translate(-10, -8, 0);
+            rotateZ(-0.75);
+            cone(5.5, 20, 6);
+            translate(-3, -10, 0);
+            rotateZ(-0.65);
+            cone(4, 18, 4);
+            pop();
+
+            // Gran Cornamenta Longhorn (Derecha)
+            push();
+            translate(10, -8, 0);
+            rotateZ(0.75);
+            cone(5.5, 20, 6);
+            translate(3, -10, 0);
+            rotateZ(0.65);
+            cone(4, 18, 4);
+            pop();
+            pop();
+            break;
+
+          case 11: // D11: Brote Botánico con Hojas Abiertas y Fruto (Harvest Plant & Fruit)
+            push();
+            cylinder(3, 36, 8); // Tallo central
+            push();
+            translate(-11, -4, 0);
+            rotateZ(0.65);
+            box(16, 7, 2); // Hoja izquierda
+            pop();
+            push();
+            translate(11, -4, 0);
+            rotateZ(-0.65);
+            box(16, 7, 2); // Hoja derecha
+            pop();
+            // Fruto de cosecha en la cima
+            push();
+            translate(0, -22, 0);
+            fill(239, 68, 68);
+            sphere(9, 8, 8);
+            translate(0, -9, 0);
+            fill(34, 197, 94);
+            cylinder(1.5, 6, 6);
+            pop();
+            pop();
+            break;
+
+          case 12: // D12: Dos Picos de Minero Cruzados sobre Carbón (Crossed Mining Pickaxes)
+            push();
+            // Roca de carbón mineral de antracita con núcleo de lava
+            push();
+            fill(25, 28, 36);
+            stroke(100, 116, 139);
+            box(16, 16, 14);
+            emissiveMaterial(255, 70, 0);
+            sphere(5, 6, 6);
+            pop();
+
+            // Pico 1 (inclinado -38 deg)
+            push();
+            rotateZ(-0.66);
+            fill(170, 100, 40);
+            cylinder(2.6, 48, 8);
+            translate(0, -20, 0);
+            fill(150, 160, 175);
+            box(8, 6, 5);
+            push(); translate(-10, 2, 0); rotateZ(0.3); cone(4, 15, 4); pop();
+            push(); translate(10, 2, 0); rotateZ(-0.3); cone(4, 15, 4); pop();
+            pop();
+
+            // Pico 2 (inclinado +38 deg)
+            push();
+            rotateZ(0.66);
+            fill(170, 100, 40);
+            cylinder(2.6, 48, 8);
+            translate(0, -20, 0);
+            fill(150, 160, 175);
+            box(8, 6, 5);
+            push(); translate(-10, 2, 0); rotateZ(0.3); cone(4, 15, 4); pop();
+            push(); translate(10, 2, 0); rotateZ(-0.3); cone(4, 15, 4); pop();
+            pop();
+            pop();
+            break;
+        }
+
+        // =====================================================================
+        // PEDESTAL Y RÓTULO DEL DISTRITO DIRECTAMENTE DEBAJO DE SU FIGURA 3D
+        // =====================================================================
+        push();
+        translate(0, 0, -28);
+        // Pedestal angular de obsidiana
+        fill(15, 23, 42);
+        stroke(c[0], c[1], c[2], 130);
+        strokeWeight(1.2);
+        box(72, 34, 7);
+
+        // Placa holográfica orientada a la vista con el nombre oficial
+        translate(0, 17, 3);
+        rotateX(HALF_PI * 0.65);
+        noStroke();
+        texture(this.badgeGfx);
+        plane(68, 23);
+        pop();
+
+        // =====================================================================
+        // INDICADOR DE FASE LINEAL VERTICAL (SIN CÍRCULOS NI ÓRBITAS)
+        // =====================================================================
+        push();
+        translate(42, 0, -8);
+        // Marco de la columna vertical de energía
+        noFill();
+        stroke(c[0], c[1], c[2], 90);
+        strokeWeight(1.0);
+        box(5, 5, 42);
+
+        // Nivel de energía de fase de Kuramoto (de 0 a TWO_PI se llena verticalmente)
+        let normPhase = ((this.theta % TWO_PI) + TWO_PI) % TWO_PI;
+        let fillHeight = map(normPhase, 0, TWO_PI, 2, 40);
+        translate(0, 0, -20 + fillHeight / 2);
+        noStroke();
+        emissiveMaterial(c[0], c[1], c[2]);
+        box(3.5, 3.5, fillHeight);
+        pop();
+
+        // Destello de haz vertical de luz al sonar
+        if (this.pulse > 0.04) {
+          push();
+          stroke(c[0], c[1], c[2], this.pulse * 255);
+          strokeWeight(2.5);
+          line(0, 0, -20, 0, 0, 75 + this.pulse * 45);
+          pop();
+        }
+
+        pop();
+      }
+    }
+
+    // =========================================================================
+    // 3. RENDERIZADO DEL TABLERO TÁCTICO TERRITORIAL 3D Y EL SINSAJO
+    // =========================================================================
+
+    // Dibuja la cuadrícula táctica y sectores territoriales de Panem (sin círculos ni órbitas)
+    function drawTacticalBoard3D(layout) {
+      push();
+
+      // Cuadrícula táctica militar ortogonal
+      stroke(245, 158, 11, 30);
+      strokeWeight(1);
+      for (let x = -400; x <= 400; x += 80) {
+        line(x, -300, -75, x, 300, -75);
+      }
+      for (let y = -300; y <= 300; y += 75) {
+        line(-400, y, -75, 400, y, -75);
+      }
+
+      // Marco rectangular perimetral
+      stroke(245, 158, 11, 75);
+      strokeWeight(2);
+      noFill();
+      beginShape();
+      vertex(-400, -300, -75);
+      vertex(400, -300, -75);
+      vertex(400, 300, -75);
+      vertex(-400, 300, -75);
+      endShape(CLOSE);
+
+      // Balizas de demarcación angular en las 4 esquinas tácticas
+      const corners = [
+        [-400, -300], [400, -300], [400, 300], [-400, 300]
+      ];
+      for (let c of corners) {
+        push();
+        translate(c[0], c[1], -45);
+        stroke(245, 158, 11, 80);
+        strokeWeight(1.5);
+        line(0, 0, -30, 0, 0, 50);
+        translate(0, 0, 50);
+        emissiveMaterial(245, 158, 11);
+        noStroke();
+        box(10, 10, 10);
+        pop();
+      }
+
+      // Vías iluminadas si está activa la Avenida de los Tributos
+      if (layout === 'AVENUE_TRIBUTES') {
+        stroke(56, 189, 248, 60);
+        strokeWeight(1.5);
+        line(-70, -300, -74, -70, 300, -74);
+        line(70, -300, -74, 70, 300, -74);
+        for (let y = -260; y <= 260; y += 65) {
+          line(-60, y, -74, 60, y, -74);
+        }
+      }
+
+      pop();
+    }
+
+    // Dibuja el Tótem Central del Sinsajo 3D (con marco angular diamantado, sin círculos)
+    function drawMockingjayTotem3D(R, audioEnergy) {
+      push();
+      translate(0, 0, -18);
+
+      let isRebel = (R < 0.45);
+      let pulseScale = 1.0 + audioEnergy * 0.4 + (isRebel ? 0.15 : 0.0);
+      scale(pulseScale);
+
+      // Pedestal de Mando Piramidal Escalonado de Obsidiana
+      ambientMaterial(15, 23, 42);
+      specularMaterial(245, 158, 11);
+      shininess(30);
+      stroke(245, 158, 11, 110);
+      strokeWeight(1.2);
+      box(60, 60, 16);
+      translate(0, 0, 12);
+      box(44, 44, 14);
+
+      // Emblema Central 3D del Sinsajo
+      translate(0, 0, 26);
+      let cGold = isRebel ? [239, 68, 68] : [245, 158, 11];
+      emissiveMaterial(cGold[0], cGold[1], cGold[2]);
+      stroke(cGold[0], cGold[1], cGold[2]);
+      strokeWeight(1.5);
+
+      // Marco Angular Diamantado del Sinsajo (sin órbitas ni toroides)
+      push();
+      rotateZ(PI / 4);
+      noFill();
+      box(52, 52, 3);
+      pop();
+
+      // Alas desplegadas en 3D
+      push();
+      rotateX(Math.sin(frameCount * 0.04) * 0.2); // Aleteo suave
+      box(52, 10, 4); // Envergadura
+      translate(0, -6, 0);
+      cone(8, 26, 4); // Pico / Flecha hacia arriba
+      pop();
+
+      // Si está en rebelión, emite llamaradas en 3D
+      if (isRebel && frameCount % 4 === 0) {
+        spawnFireBurst3D(0, 0, 30, 8);
+      }
+
+      pop();
+    }
+
+    // Osciloscopio Lineal 3D en las fronteras del tablero táctico (sin círculos)
+    function drawLinearOscilloscope3D() {
+      if (!analyserNode || !waveData) return;
+      analyserNode.getByteTimeDomainData(waveData);
+
+      push();
+      noFill();
+      stroke(245, 158, 11, 130);
+      strokeWeight(2);
+      beginShape();
+      let total = waveData.length;
+      for (let i = 0; i < total; i += 2) {
+        let x = map(i, 0, total, -380, 380);
+        let v = (waveData[i] - 128) / 128.0;
+        let y = -295;
+        let z = -74 + v * 35;
+        vertex(x, y, z);
+      }
+      endShape();
+
+      // Espectro simétrico en el borde sur
+      stroke(56, 189, 248, 100);
+      beginShape();
+      for (let i = 0; i < total; i += 2) {
+        let x = map(i, 0, total, -380, 380);
+        let v = (waveData[i] - 128) / 128.0;
+        let y = 295;
+        let z = -74 + v * 35;
+        vertex(x, y, z);
+      }
+      endShape();
+      pop();
+    }
+
+    // Conexiones de acoplamiento de Kuramoto como rayos láser 3D directos
+    function drawCouplingBeams3D(districtsList, radius, R) {
+      push();
+      for (let i = 0; i < districtsList.length; i++) {
+        for (let j = i + 1; j < districtsList.length; j++) {
+          let d1 = districtsList[i];
+          let d2 = districtsList[j];
+          if (d1.isIsolated || d2.isIsolated) continue;
+
+          let d = dist(d1.x, d1.y, d1.z, d2.x, d2.y, d2.z);
+          if (d <= radius) {
+            let weight = 1.0 - (d / radius);
+            let alpha = weight * (75 + R * 155);
+
+            strokeWeight(1.0 + weight * 1.5);
+            let beamColor = (R > 0.65) ? [245, 158, 11] : [56, 189, 248];
+            stroke(beamColor[0], beamColor[1], beamColor[2], alpha);
+
+            line(d1.x, d1.y, d1.z, d2.x, d2.y, d2.z);
+          }
+        }
+      }
+      pop();
+    }
+
+    // =========================================================================
+    // 4. MAIN SETUP Y DRAW (WEBGL 3D NATIVO - SIN ÓRBITAS)
+    // =========================================================================
+    let lastR = 0;
+    let globalMeanPhase = 0;
+
+    function setup() {
+      // INICIALIZAR P5 EN MODO WEBGL 3D
+      let canvas = createCanvas(windowWidth, windowHeight, WEBGL);
+      canvas.parent(document.body);
+      canvas.elt.oncontextmenu = (e) => e.preventDefault();
+
+      // Partículas ambientales 3D
+      particles3D = [];
+      for (let i = 0; i < 90; i++) {
+        particles3D.push(new AmbientAsh3D());
+      }
+
+      // Inicializar los 12 Distritos en su formación territorial 3D inicial
+      districts = [];
+      for (let i = 0; i < DISTRICT_DATA.length; i++) {
+        let anchor = getDistrictAnchor(DISTRICT_DATA[i], currentLayout);
+        districts.push(new DistrictNode3D(DISTRICT_DATA[i], anchor.x, anchor.y, anchor.z));
+      }
+
+      setupUI();
+      setCameraView('ISO');
+    }
+
+    function setCameraView(view) {
+      if (view === 'TOP') {
+        camera(0, 1, 900, 0, 0, 0, 0, -1, 0);
+      } else if (view === 'FRONT') {
+        camera(0, 680, 140, 0, 0, 0, 0, 0, -1);
+      } else { // ISO
+        camera(0, 500, 560, 0, 0, 0, 0, 0, -1);
+      }
+    }
+
+    function draw() {
+      // Fondo nocturno de obsidiana del Capitolio
+      background(2, 6, 23);
+
+      // CÁMARA 3D ORBITAL INTERACTIVA
+      orbitControl(1.2, 1.2, 0.08);
+
+      // ILUMINACIÓN 3D VOLUMÉTRICA
+      ambientLight(25, 35, 55);
+      directionalLight(245, 158, 11, 0.4, 0.8, -1);
+      directionalLight(56, 189, 248, -0.4, -0.6, -0.5);
+      pointLight(245, 158, 11, 0, 0, 100);
+
+      // Proceso del Silbido de Rue (armonización progresiva)
+      if (isWhistlingHarmonization) {
+        whistleTimer--;
+        if (whistleTimer <= 0) isWhistlingHarmonization = false;
+      }
+
+      // 1. Dibujar el Suelo Táctico Territorial 3D (Sin círculos)
+      drawTacticalBoard3D(currentLayout);
+
+      // 2. Osciloscopio Lineal 3D (Sin círculos)
+      drawLinearOscilloscope3D();
+
+      // 3. Cenizas atmosféricas 3D
+      for (let p of particles3D) {
+        p.update();
+        p.draw();
+      }
+
+      // 4. Partículas de Fuego y Chispas 3D
+      for (let i = fireParticles3D.length - 1; i >= 0; i--) {
+        let fp = fireParticles3D[i];
+        if (fp.update()) {
+          fp.draw();
+        } else {
+          fireParticles3D.splice(i, 1);
+        }
+      }
+
+      // 5. Ondas acústicas prismáticas 3D (SonicPrism3D - sin círculos)
+      for (let i = sonicRipples3D.length - 1; i >= 0; i--) {
+        let sr = sonicRipples3D[i];
+        if (sr.update()) {
+          sr.draw();
+        } else {
+          sonicRipples3D.splice(i, 1);
+        }
+      }
+
+      // 6. Conexiones láser 3D de Kuramoto
+      drawCouplingBeams3D(districts, listeningRadius, lastR);
+
+      // 7. Actualización y Renderizado de los 12 Distritos 3D (con rótulo y pistón Z)
+      let sumCos = 0;
+      let sumSin = 0;
+      for (let d of districts) {
+        d.update(districts, lastR);
+        d.draw();
+        sumCos += Math.cos(d.theta);
+        sumSin += Math.sin(d.theta);
+      }
+
+      // 8. Cálculo de Parámetro de Orden de Kuramoto (R y psi)
+      let meanCos = sumCos / districts.length;
+      let meanSin = sumSin / districts.length;
+      lastR = Math.sqrt(meanCos * meanCos + meanSin * meanSin);
+      globalMeanPhase = Math.atan2(meanSin, meanCos);
+
+      // 9. Tótem Central del Sinsajo 3D
+      let audioEnergy = 0;
+      if (freqData && analyserNode) {
+        analyserNode.getByteFrequencyData(freqData);
+        let sum = 0;
+        for (let i = 0; i < 16; i++) sum += freqData[i];
+        audioEnergy = (sum / 16) / 255.0;
+      }
+      drawMockingjayTotem3D(lastR, audioEnergy);
+
+      // 10. Actualización de Audio y HUD 2D
+      updateAudioSystem(lastR, districts);
+      updateUIFeedback(lastR, globalMeanPhase);
+    }
+
+    // =========================================================================
+    // 5. INTERACCIÓN Y EVENTOS DE RATÓN Y TECLADO
+    // =========================================================================
+    function mousePressed() {
+      const overlay = document.getElementById('audio-overlay');
+      if (overlay && overlay.style.display !== 'none') return;
+
+      let panel = document.getElementById('ui-panel');
+      let rect = panel.getBoundingClientRect();
+      if (mouseX >= rect.left && mouseX <= rect.right && mouseY >= rect.top && mouseY <= rect.bottom) {
+        return;
+      }
+    }
+
+    function keyPressed() {
+      if (key === ' ' || keyCode === 32) {
+        playRueWhistle();
+        return false;
+      } else if (key === 'c' || key === 'C') {
+        triggerCapitolPulse();
+      }
+    }
+
+    function windowResized() {
+      resizeCanvas(windowWidth, windowHeight);
+    }
+
+    // =========================================================================
+    // 6. CONTROLADORES DEL HUD DE LA INTERFAZ
+    // =========================================================================
+    function setupUI() {
+      const overlay = document.getElementById('audio-overlay');
+      const startBtn = document.getElementById('start-btn');
+      const sliderK = document.getElementById('slider-k');
+      const sliderRadius = document.getElementById('slider-radius');
+      const sliderTempo = document.getElementById('slider-tempo');
+      const sliderMotion = document.getElementById('slider-motion');
+      const sliderReverb = document.getElementById('slider-reverb');
+      const btnWhistle = document.getElementById('btn-whistle');
+      const btnLayout = document.getElementById('btn-layout');
+      const btnLayoutText = document.getElementById('btn-layout-text');
+      const btnPulse = document.getElementById('btn-pulse');
+      const btnScatter = document.getElementById('btn-scatter');
+      const btnRebelAll = document.getElementById('btn-rebel-all');
+
+      const valK = document.getElementById('val-k');
+      const valRadius = document.getElementById('val-radius');
+      const valTempo = document.getElementById('val-tempo');
+      const valMotion = document.getElementById('val-motion');
+      const valReverb = document.getElementById('val-reverb');
+
+      startBtn.addEventListener('click', () => {
+        initAudioEngine();
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+          overlay.style.display = 'none';
+        }, 600);
+      });
+
+      sliderK.addEventListener('input', (e) => {
+        K_coupling = parseFloat(e.target.value);
+        valK.textContent = K_coupling.toFixed(1);
+      });
+
+      sliderRadius.addEventListener('input', (e) => {
+        listeningRadius = parseInt(e.target.value);
+        valRadius.textContent = `${listeningRadius} px`;
+      });
+
+      sliderTempo.addEventListener('input', (e) => {
+        clockTempo = parseFloat(e.target.value);
+        valTempo.textContent = `${clockTempo.toFixed(1)}x`;
+      });
+
+      sliderMotion.addEventListener('input', (e) => {
+        motionFactor = parseInt(e.target.value) / 100.0;
+        valMotion.textContent = `${e.target.value}%`;
+      });
+
+      sliderReverb.addEventListener('input', (e) => {
+        let rev = parseInt(e.target.value) / 100.0;
+        valReverb.textContent = `${e.target.value}%`;
+        if (reverbGain && dryGain && audioCtx) {
+          reverbGain.gain.setTargetAtTime(rev * 0.8, audioCtx.currentTime, 0.05);
+          dryGain.gain.setTargetAtTime(1.0 - rev * 0.4, audioCtx.currentTime, 0.05);
+        }
+      });
+
+      btnWhistle.addEventListener('click', () => {
+        playRueWhistle();
+      });
+
+      // Alternador de Formaciones Territoriales No-Orbitales
+      const layoutsList = ['TACTICAL_GRID', 'AVENUE_TRIBUTES', 'STEPPED_PYRAMID'];
+      const layoutLabels = {
+        'TACTICAL_GRID': 'Matriz 4x3',
+        'AVENUE_TRIBUTES': 'Avenida',
+        'STEPPED_PYRAMID': 'Zigurat'
+      };
+
+      btnLayout.addEventListener('click', () => {
+        let idx = layoutsList.indexOf(currentLayout);
+        currentLayout = layoutsList[(idx + 1) % layoutsList.length];
+        btnLayoutText.textContent = layoutLabels[currentLayout];
+        // Onda de choque prismática de reordenamiento
+        sonicRipples3D.push(new SonicPrism3D(0, 0, 0, 420, [56, 189, 248], 6));
+      });
+
+      btnPulse.addEventListener('click', () => {
+        triggerCapitolPulse();
+      });
+
+      btnScatter.addEventListener('click', () => {
+        scatterPhases();
+      });
+
+      btnRebelAll.addEventListener('click', () => {
+        for (let d of districts) {
+          d.isIsolated = true;
+          d.isolationTimer = 500;
+          d.omega = d.baseOmega * 1.8;
+          spawnFireBurst3D(d.x, d.y, d.z, 15);
+        }
+        sonicRipples3D.push(new SonicPrism3D(0, 0, 0, 500, [239, 68, 68], 7));
+      });
+    }
+
+    function scatterPhases() {
+      for (let d of districts) {
+        d.theta = Math.random() * TWO_PI;
+        d.pulse = 1.0;
+      }
+      sonicRipples3D.push(new SonicRipple3D(0, 0, 0, 420, [239, 68, 68], 6));
+      spawnFireBurst3D(0, 0, 0, 35);
+    }
+
+    function triggerCapitolPulse() {
+      if (!audioCtx) return;
+      for (let d of districts) {
+        if (!d.isIsolated) {
+          d.theta = globalMeanPhase;
+          d.pulse = 1.0;
+        }
+      }
+      sonicRipples3D.push(new SonicRipple3D(0, 0, 0, 550, [245, 158, 11], 8));
+      playDistrictTrigger(0, false, 1.6);
+    }
+
+    function updateUIFeedback(R, psi) {
+      const valR = document.getElementById('val-r');
+      const valState = document.getElementById('val-state');
+      const compass = document.getElementById('compass-canvas');
+      if (!valR || !valState || !compass) return;
+
+      valR.textContent = R.toFixed(2);
+
+      if (isWhistlingHarmonization) {
+        valState.textContent = 'ARMONIZANDO CON EL SINSAJO...';
+        valState.className = 'state-indicator state-hegemony';
+      } else if (R < 0.35) {
+        valState.textContent = 'DESORDEN / REBELIÓN TOTAL';
+        valState.className = 'state-indicator state-chaos';
+      } else if (R < 0.65) {
+        valState.textContent = 'RESISTENCIA ACTIVA';
+        valState.className = 'state-indicator state-partial';
+      } else if (R < 0.88) {
+        valState.textContent = 'CONTROL DEL CAPITOLIO';
+        valState.className = 'state-indicator state-stable';
+      } else {
+        valState.textContent = 'HEGEMONÍA ABSOLUTA (UNÍSONO)';
+        valState.className = 'state-indicator state-hegemony';
+      }
+
+      // Dibujar aguja en la brújula 2D
+      let ctx = compass.getContext('2d');
+      ctx.clearRect(0, 0, 58, 58);
+
+      ctx.beginPath();
+      ctx.arc(29, 29, 23, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      let vecLength = R * 21;
+      let vecX = 29 + Math.cos(psi) * vecLength;
+      let vecY = 29 + Math.sin(psi) * vecLength;
+
+      ctx.beginPath();
+      ctx.moveTo(29, 29);
+      ctx.lineTo(vecX, vecY);
+      ctx.strokeStyle = R > 0.65 ? '#f59e0b' : '#ef4444';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(29, 29, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(vecX, vecY, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = R > 0.65 ? '#f59e0b' : '#ef4444';
+      ctx.fill();
+    }
+  </script>
+</body>
+</html>
