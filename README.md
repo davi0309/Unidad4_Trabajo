@@ -1,4 +1,4 @@
-# 🏹 Panem: Tablero Táctico y Matriz Sónica 3D
+# Panem: Tablero Táctico y con musica
 ### Instrumento Audiovisual Interactivo basado en el Modelo de Sincronización de Kuramoto
 
 Bienvenido al repositorio oficial de **Panem: Matriz Sónica 3D**, un instrumento digital interactivo que combina la física matemática del **Modelo de Osciladores Acoplados de Kuramoto** con la estética cinematográfica de **Los Juegos del Hambre (*The Hunger Games*)**.
@@ -13,11 +13,16 @@ A lo largo del proceso de desarrollo, el proyecto experimentó una transformaci�
 
 | Fase / Vista | Captura | Descripción |
 | :--- | :---: | :--- |
-| **1. Versión Inicial (2D Plano)** | ![Versión Inicial 2D](assets/01_version_inicial_2d.png) | Nodos circulares básicos con iconos planos agrupados en el centro de la pantalla. |
-| **2. Matriz Territorial 3D** | ![Matriz Táctica 4x3](assets/02_matriz_tactica_3d.png) | Malla militar 4x3 con esculturas 3D emblemáticas, placas de nombre y barras de fase ($R = 1.00$). |
-| **3. Avenida de los Tributos (Cenital)** | ![Avenida Cenital](assets/03_avenida_cenital_3d.png) | Vista de planta (Top-down) mostrando las dos columnas paralelas de 6 distritos flanqueando el bulevar central. |
-| **4. Avenida de los Tributos (Frontal)** | ![Avenida Frontal](assets/04_avenida_frontal_3d.png) | Perspectiva a nivel del suelo con desniveles en Z, osciloscopio lineal y monolito central del Sinsajo ($R = 0.63$). |
-| **5. Estado de Rebelión y Caos** | ![Rebelión Total](assets/05_rebelion_caos_3d.png) | Desfase masivo ($R = 0.34$), distritos rebeldes emitiendo brasas y partículas de fuego ascendentes. |
+| **1. Versión Inicial (2D Plano)** | ![Versión Inicial 2D](<img width="1600" height="729" alt="imagen" src="https://github.com/user-attachments/assets/2403e073-729d-4204-b415-45e5c7cd2c75" />
+) | Nodos circulares básicos con iconos planos agrupados en el centro de la pantalla. |
+| **2. Matriz Territorial 3D** | ![Matriz Táctica 4x3](<img width="1600" height="743" alt="imagen" src="https://github.com/user-attachments/assets/718f1298-2aa1-4125-a6b4-19720d0ca7f1" />
+) | Malla militar 4x3 con esculturas 3D emblemáticas, placas de nombre y barras de fase ($R = 1.00$). |
+| **3. Avenida de los Tributos (Cenital)** | ![Avenida Cenital](<img width="1600" height="754" alt="imagen" src="https://github.com/user-attachments/assets/2673a098-b955-4c41-95e0-3c9d82644b5d" />
+) | Vista de planta (Top-down) mostrando las dos columnas paralelas de 6 distritos flanqueando el bulevar central. |
+| **4. Avenida de los Tributos (Frontal)** | ![Avenida Frontal](<img width="1600" height="748" alt="imagen" src="https://github.com/user-attachments/assets/1fa4a3ef-1789-47e3-b723-bcb8a69ad4d4" />
+) | Perspectiva a nivel del suelo con desniveles en Z, osciloscopio lineal y monolito central del Sinsajo ($R = 0.63$). |
+| **5. Estado de Rebelión y Caos** | ![Rebelión Total](<img width="1600" height="767" alt="imagen" src="https://github.com/user-attachments/assets/995e2cd0-fcb7-45b5-b2a8-5f4d5d85d36a" />
+) | Desfase masivo ($R = 0.34$), distritos rebeldes emitiendo brasas y partículas de fuego ascendentes. |
 
 ---
 
